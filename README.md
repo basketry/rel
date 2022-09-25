@@ -7,21 +7,26 @@ The `rel` metadata type provides a syntax for defining relationships between typ
 
 ## `primaryKey`
 
-Use `primaryKey` to indicate that a property is the primary key of an object.
+Use `primaryKey` to indicate that a property or parameter refers to the primary key of an object.
 
 Applied to:
 
 - Property
+- Parameter
 
 Schema:
 
-- `primaryKey` [`true`] - Value (always `true`) that indicates that the parent property is the object's primary key.
+- `primaryKey` [`true`] - Value (always `true`) that indicates that the parent property or parameter refers to an object's primary key.
 
 Example:
 
 ```json
 { "primaryKey": true }
 ```
+
+### Property
+
+Add a primary key to a property to indicate that the property is this type's primary key.
 
 Example in context (JSONSchema/OpenAPI):
 
@@ -36,6 +41,28 @@ Example in context (JSONSchema/OpenAPI):
     "name": { "type": "string" },
     "value": { "type": "number" }
   }
+}
+```
+
+### Parameter
+
+Add a primary key to a method parameter to indicate that the supplied argument is the primary key of the root type returned by the method.
+
+If the method return type is an object or array, then the root type the object's type of the type of the array element. If the method type is an "envelop" (an object with an errors array and a wrapped data, value, or values property), then the root type referres to the type of the wrapped property.
+
+Example in context (OpenAPI):
+
+```json
+{
+  "operationId": "getGizmos",
+  "parameters": [
+    {
+      "name": "widgetId",
+      "in": "query",
+      "type": "string",
+      "x-rel": { "primaryKey": true } // Indicates that "widgetId" refers to the "id" property on the return value's root type
+    }
+  ]
 }
 ```
 
@@ -118,6 +145,20 @@ Example in context (OpenAPI):
   ]
 }
 ```
+
+When used on a parameter, it is assumed that the foreign key will be represented on the method return value root type as `type` + `property`. (Eg. for type `widget` and property `id`, then the return value root type is expecte to have a method called `widgetId`.) If the property on the root type is named something different, then the property name can be specified with a `localProperty` value:
+
+```json
+{
+  "foreignKey": {
+    "type": "widget",
+    "property": "id",
+    "localProperty": "defaultWidgetId"
+  }
+}
+```
+
+Note that `localProperty` only has an effect when applied to Parameters.
 
 ## `edge`
 
