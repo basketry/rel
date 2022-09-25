@@ -3,14 +3,18 @@
 import {
   decodeRange,
   getTypeByName,
+  Literal,
   Meta,
   MetaValue,
+  Parameter,
+  Property,
   Range,
   Service,
   Type,
   Violation,
 } from 'basketry';
 import { resolve } from 'path';
+import { camel, snake } from 'case';
 import { Edge, ForeignKey, Rel } from './types';
 
 const REL_TYPE = 'rel/type';
@@ -112,7 +116,8 @@ function uncachedParse(
   }
   if (foreignKey !== undefined) {
     if (isObject(foreignKey)) {
-      const { type, property, many, ...foreignKeyRest } = foreignKey;
+      const { type, property, many, localProperty, ...foreignKeyRest } =
+        foreignKey;
       if (typeof type !== 'string') {
         violations.push(
           typeViolation('"rel/foreignKey/type" must be a string.'),
@@ -128,10 +133,17 @@ function uncachedParse(
           typeViolation('"rel/foreignKey/many" must be a boolean if provided.'),
         );
       }
+      if (localProperty !== undefined && typeof localProperty !== 'string') {
+        violations.push(
+          typeViolation(
+            '"rel/foreignKey/localProperty" must be a string if provided.',
+          ),
+        );
+      }
       if (Object.keys(foreignKeyRest).length) {
         violations.push(
           typeViolation(
-            '"rel/foreignKey" many only define "type", "property", and "many". Additional properties are prohibited.',
+            '"rel/foreignKey" many only define "type", "property", "many", and "localProperty". Additional properties are prohibited.',
           ),
         );
       }
@@ -172,7 +184,8 @@ function uncachedParse(
   if (primaryKey) {
     return { meta: { kind: 'primaryKey' }, violations };
   } else if (foreignKey) {
-    const { type, property, many } = foreignKey;
+    const { type, property, many, localProperty } = foreignKey;
+
     const foreignType = getTypeByName(service, type);
     if (foreignType) {
       const prop = foreignType.properties.find(
@@ -196,9 +209,23 @@ function uncachedParse(
       }
     }
 
+    const local = localProperty || camel(`${snake(type)}_${snake(property)}`);
+
+    if (typeof local !== 'string') {
+      violations.push(
+        referenceViolation(`Local property name cannot be determined`),
+      );
+    }
+
     if (violations.length) return { meta: undefined, violations };
     return {
-      meta: { kind: 'foreignKey', type, property, many: many || false },
+      meta: {
+        kind: 'foreignKey',
+        type,
+        property,
+        many: many || false,
+        localProperty: local,
+      },
       violations,
     };
   } else if (edge) {

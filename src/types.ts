@@ -11,5 +11,6 @@ export type ForeignKey = {
   type: string;
   property: string;
   many: boolean;
+  localProperty: string;
 };
 export type Edge = { kind: 'edge'; types: [string, string] };
