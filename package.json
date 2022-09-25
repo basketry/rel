@@ -1,6 +1,6 @@
 {
   "name": "@basketry/rel",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Utilities for implementing relationship metadata",
   "main": "./lib/index.js",
   "scripts": {
